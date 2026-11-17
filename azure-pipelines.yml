@@ -1,0 +1,60 @@
+trigger:
+  branches:
+    include: [ main ]
+pr:
+  branches:
+    include: [ main ]
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+          - task: Maven@4
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'verify'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.17'
+              publishJUnitResults: false
+
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              failTaskOnFailedTests: true
+
+          - task: PublishCodeCoverageResults@2
+            condition: succeededOrFailed()
+            inputs:
+              summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/jacoco.xml'
+
+          - task: CopyFiles@2                       # NOUVEAU : ne garder que le JAR
+            inputs:
+              Contents: 'target/*.jar'
+              TargetFolder: '$(Build.ArtifactStagingDirectory)'
+              flattenFolders: true
+
+          - task: PublishPipelineArtifact@1         # NOUVEAU : ≈ GitLab artifacts:
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)'
+              artifact: 'app'
+
+  - stage: Deploy                               # NOUVEAU
+    dependsOn: Build                            # ≈ needs:
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))  # ≈ rules: pas sur une MR
+    jobs:
+      - deployment: DeployDev
+        environment: 'dev'                        # ≈ environment:
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: app
+                - script: ls -lh $(Pipeline.Workspace)/app
+                  displayName: 'Vérifier le JAR reçu'
