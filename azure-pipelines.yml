@@ -1,3 +1,11 @@
+schedules:
+  - cron: '0 1 * * *'        # 02:00 Lausanne en hiver (UTC+1)
+    displayName: Nightly build
+    branches:
+      include:
+        - main
+    always: false
+
 trigger:
   branches:
     include: [ main ]
@@ -6,7 +14,7 @@ pr:
     include: [ main ]
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: ubuntu-24.04
 
 stages:
   - stage: Build
