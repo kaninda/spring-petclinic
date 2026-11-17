@@ -77,4 +77,9 @@ class ValidatorTests {
 		assertThat(violation.getMessage()).isEqualTo("must not be blank");
 	}
 
+	@Test
+	void shouldNotValidateWhenFirstNameNull() {
+		org.junit.jupiter.api.Assertions.fail("test cassé volontairement");
+	}
+
 }
