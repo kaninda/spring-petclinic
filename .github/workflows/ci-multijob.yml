@@ -1,0 +1,34 @@
+name: CI multi-job
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:            # ≈ run manuel Azure
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4          # explicite !
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: ./mvnw -B verify
+      - uses: actions/upload-artifact@v4   # ≈ PublishPipelineArtifact
+        with:
+          name: app
+          path: target/*.jar
+
+  deploy:
+    needs: build                           # ≈ dependsOn
+    if: github.event_name != 'pull_request'  # ≈ ne(Build.Reason,'PullRequest')
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/download-artifact@v4 # ≈ download: current
+        with:
+          name: app
+      - run: ls -lh *.jar
