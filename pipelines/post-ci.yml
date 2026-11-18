@@ -1,0 +1,23 @@
+trigger: none          # pas de CI : seul le pipeline amont le déclenche
+pr: none
+
+resources:
+  pipelines:
+    - pipeline: petclinicCI                  # alias local
+      source: kaninda.spring-petclinic       # NOM exact du pipeline dans Azure DevOps
+      trigger:
+        branches:
+          include:
+            - main
+
+pool:
+  vmImage: ubuntu-24.04
+
+steps:
+  - download: petclinicCI                    # récupère les artefacts du run amont
+  - script: |
+      echo "Source : $(resources.pipeline.petclinicCI.pipelineName)"
+      echo "Run amont : $(resources.pipeline.petclinicCI.runName)"
+      echo "Build.Reason = $(Build.Reason)"
+      ls -R $(Pipeline.Workspace)/petclinicCI
+    displayName: Qui m'a déclenché ?
